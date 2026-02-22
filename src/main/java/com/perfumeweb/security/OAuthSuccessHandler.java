@@ -1,7 +1,7 @@
 package com.perfumeweb.security;
 
+import com.perfumeweb.model.Role;
 import com.perfumeweb.model.User;
-import com.perfumeweb.security.JwtUtil;
 import com.perfumeweb.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
@@ -18,7 +18,8 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
-    public OAuthSuccessHandler(UserRepository userRepository, JwtUtil jwtUtil) {
+    public OAuthSuccessHandler(UserRepository userRepository,
+                               JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
     }
@@ -30,10 +31,13 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
             Authentication authentication
     ) throws IOException, ServletException {
 
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+        OAuth2User oauthUser =
+                (OAuth2User) authentication.getPrincipal();
 
         String email = oauthUser.getAttribute("email");
-        if (email == null) throw new RuntimeException("Google email missing");
+        if (email == null)
+            throw new RuntimeException("Google email missing");
+
         String name = oauthUser.getAttribute("name");
 
         User user = userRepository.findByEmail(email)
@@ -41,16 +45,19 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
                     User u = new User();
                     u.setEmail(email);
                     u.setName(name);
-                    u.setRole("USER");
+
+                    // 🔥 ENUM FIX
+                    u.setRole(Role.USER);
+
                     u.setProvider("GOOGLE");
-                    u.setPassword("");
+                    u.setPassword(""); // OAuth users no password
                     return userRepository.save(u);
                 });
 
         String token = jwtUtil.generateToken(
                 user.getEmail(),
                 user.getName(),
-                user.getRole(),
+                user.getRole().name(),   // 🔥 convert enum to string
                 user.getProvider()
         );
 

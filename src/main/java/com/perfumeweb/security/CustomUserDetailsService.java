@@ -2,28 +2,38 @@ package com.perfumeweb.security;
 
 import com.perfumeweb.model.User;
 import com.perfumeweb.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.Optional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
-    @Autowired
-    private UserRepository userRepository;
+
+    private final UserRepository userRepository;
+
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority(user.getRole()))
-        );
+    public UserDetails loadUserByUsername(String email)
+            throws UsernameNotFoundException {
+
+        Optional<User> userOptional =
+                userRepository.findByEmail(email);
+
+        if (userOptional.isEmpty()) {
+            throw new UsernameNotFoundException("User not found");
+        }
+
+        User user = userOptional.get();
+
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .roles(user.getRole().name()) // 🔥 IMPORTANT
+                .build();
     }
 }

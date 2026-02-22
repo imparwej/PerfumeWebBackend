@@ -8,6 +8,7 @@ import com.perfumeweb.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -52,7 +53,7 @@ public class OrderController {
     }
 
     // =========================
-    // CANCEL ORDER
+    // CANCEL ORDER (USER)
     // =========================
     @PatchMapping("/{id}/cancel")
     public OrderResponse cancelOrder(
@@ -65,7 +66,22 @@ public class OrderController {
     }
 
     // =========================
-    // EXPORT PDF
+    // ADMIN UPDATE ORDER STATUS
+    // =========================
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/status")
+    public OrderResponse updateOrderStatus(
+            @PathVariable Long id,
+            @RequestBody StatusRequest request
+    ) {
+
+        Order order = orderService.updateOrderStatus(id, request.getStatus());
+
+        return toDto(order);
+    }
+
+    // =========================
+    // EXPORT PDF (USER)
     // =========================
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportOrdersPdf(
@@ -88,7 +104,7 @@ public class OrderController {
     }
 
     // =========================
-    // GET SINGLE ORDER
+    // GET SINGLE ORDER (USER SECURE)
     // =========================
     @GetMapping("/{id}")
     public OrderResponse getOrderById(
@@ -101,7 +117,7 @@ public class OrderController {
     }
 
     // =========================
-    // GET MY ORDERS
+    // GET MY ORDERS (USER)
     // =========================
     @GetMapping("/my")
     public PaginatedResponse<OrderResponse> getMyOrders(

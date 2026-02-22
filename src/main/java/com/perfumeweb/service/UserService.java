@@ -5,6 +5,7 @@ import com.perfumeweb.dto.ChangePasswordRequest;
 import com.perfumeweb.dto.ProfileUpdateRequest;
 import com.perfumeweb.dto.UserLoginRequest;
 import com.perfumeweb.dto.UserRegisterRequest;
+import com.perfumeweb.model.Role;
 import com.perfumeweb.model.User;
 import com.perfumeweb.repository.UserRepository;
 import com.perfumeweb.security.JwtUtil;
@@ -46,7 +47,10 @@ public class UserService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+
+        // 🔥 ENUM ROLE
+        user.setRole(Role.USER);
+
         user.setProvider("LOCAL");
 
         userRepository.save(user);
@@ -54,13 +58,13 @@ public class UserService {
         String token = jwtUtil.generateToken(
                 user.getEmail(),
                 user.getName(),
-                user.getRole(),
+                user.getRole().name(),   // 🔥 convert enum to string
                 user.getProvider()
         );
 
         AuthResponse response = new AuthResponse();
         response.setToken(token);
-        response.setRole(user.getRole());
+        response.setRole(user.getRole().name());
 
         log.info("User registered + auto login: {}", user.getEmail());
 
@@ -84,13 +88,13 @@ public class UserService {
             String token = jwtUtil.generateToken(
                     user.getEmail(),
                     user.getName(),
-                    user.getRole(),
+                    user.getRole().name(),   // 🔥 enum fix
                     user.getProvider()
             );
 
             AuthResponse response = new AuthResponse();
             response.setToken(token);
-            response.setRole(user.getRole());
+            response.setRole(user.getRole().name());
 
             log.info("Login successful: {}", request.getEmail());
 

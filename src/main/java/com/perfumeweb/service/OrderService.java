@@ -73,7 +73,7 @@ public class OrderService {
     }
 
     // =========================
-    // CANCEL ORDER
+    // CANCEL ORDER (USER)
     // =========================
     public Order cancelOrder(Long id, String email) {
 
@@ -86,26 +86,45 @@ public class OrderService {
             throw new RuntimeException("Already cancelled");
 
         order.setStatus(OrderStatus.CANCELLED);
+
         return orderRepository.save(order);
     }
 
     // =========================
-// GET USER ORDERS
-// =========================
+    // ADMIN UPDATE ORDER STATUS
+    // =========================
+    public Order updateOrderStatus(Long id, String status) {
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        OrderStatus newStatus = OrderStatus.valueOf(status);
+
+        // Prevent invalid updates
+        if (order.getStatus() == OrderStatus.CANCELLED)
+            throw new RuntimeException("Cancelled order cannot be updated");
+
+        order.setStatus(newStatus);
+
+        return orderRepository.save(order);
+    }
+
+    // =========================
+    // GET USER ORDERS
+    // =========================
     public Page<Order> getOrdersByUser(String email, Pageable pageable) {
-        System.out.println("Fetching orders for user: " + email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        System.out.println("User ID = " + user.getId());
 
         return orderRepository.findByUserIdOrderByCreatedAtDesc(
-                user.getId(),  // ✅ FIX
+                user.getId(),
                 pageable
         );
     }
 
     // =========================
-    // GET ORDER SECURE
+    // GET ORDER SECURE (USER)
     // =========================
     public Order getOrderByIdSecure(Long id, String email) {
 

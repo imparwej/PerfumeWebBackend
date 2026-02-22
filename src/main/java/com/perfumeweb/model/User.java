@@ -11,7 +11,7 @@ public class User {
     private Long id;
 
     @Column(nullable = false)
-    private String name;   //
+    private String name;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -19,16 +19,19 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    // 🔥 ROLE ENUM (Production Safe)
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private Role role;
 
     @Column(nullable = false)
     private String provider; // LOCAL / GOOGLE / APPLE
 
     private String phone;
 
-
-    // ===== GETTERS & SETTERS =====
+    // =====================
+    // GETTERS & SETTERS
+    // =====================
 
     public Long getId() {
         return id;
@@ -38,7 +41,6 @@ public class User {
         this.id = id;
     }
 
-    // 🔥 THIS FIXES YOUR ERROR
     public String getName() {
         return name;
     }
@@ -63,26 +65,29 @@ public class User {
         this.password = password;
     }
 
-    public String getRole() {
+    // 🔥 UPDATED ROLE GETTER
+    public Role getRole() {
         return role;
+    }
+
+    // 🔥 UPDATED ROLE SETTER
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public String getProvider() {
+        return provider;
     }
 
     public void setProvider(String provider) {
         this.provider = provider;
     }
 
-    public String getProvider(){
-        return provider;
-    };
     public String getPhone() {
         return phone;
     }
 
     public void setPhone(String phone) {
         this.phone = phone;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
     }
 }
