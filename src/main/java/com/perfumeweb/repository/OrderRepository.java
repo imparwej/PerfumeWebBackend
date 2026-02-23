@@ -2,6 +2,7 @@ package com.perfumeweb.repository;
 
 import com.perfumeweb.model.Order;
 import com.perfumeweb.model.OrderStatus;
+import com.perfumeweb.model.User;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,25 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
     // =========================
+    // ADMIN FILTER BY DATE RANGE
+    // =========================
+    Page<Order> findByCreatedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end,
+            Pageable pageable
+    );
+
+    // =========================
+    // ADMIN FILTER BY STATUS + DATE
+    // =========================
+    Page<Order> findByStatusAndCreatedAtBetween(
+            OrderStatus status,
+            LocalDateTime start,
+            LocalDateTime end,
+            Pageable pageable
+    );
+
+    // =========================
     // ADMIN: LATEST ORDERS
     // =========================
     Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
@@ -34,39 +54,63 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // ================== REVENUE ANALYTICS =================
     // =====================================================
 
-    // 🔥 TOTAL REVENUE (ALL TIME)
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o")
+    // 🔥 TOTAL REVENUE (DELIVERED ONLY)
+    @Query("""
+        SELECT COALESCE(SUM(o.totalAmount), 0)
+        FROM Order o
+        WHERE o.status = 'DELIVERED'
+    """)
     BigDecimal getTotalRevenue();
 
-    // 🔥 REVENUE SINCE DATE
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.createdAt >= :date")
+    // 🔥 REVENUE SINCE DATE (DELIVERED ONLY)
+    @Query("""
+        SELECT COALESCE(SUM(o.totalAmount), 0)
+        FROM Order o
+        WHERE o.createdAt >= :date
+        AND o.status = 'DELIVERED'
+    """)
     BigDecimal getRevenueSince(@Param("date") LocalDateTime date);
 
-    // 🔥 MONTHLY REVENUE (YYYY-MM)
+    // 🔥 CUSTOMER LIFETIME VALUE
+    @Query("""
+        SELECT COALESCE(SUM(o.totalAmount), 0)
+        FROM Order o
+        WHERE o.user = :user
+        AND o.status = 'DELIVERED'
+    """)
+    BigDecimal getUserLifetimeSpend(@Param("user") User user);
+
+    // 🔥 CUSTOMER TOTAL ORDERS
+    Long countByUser(User user);
+
+    // 🔥 MONTHLY REVENUE (DELIVERED ONLY)
     @Query("""
         SELECT FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m'),
                COALESCE(SUM(o.totalAmount),0)
         FROM Order o
+        WHERE o.status = 'DELIVERED'
         GROUP BY FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m')
         ORDER BY FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m')
     """)
     List<Object[]> getMonthlyRevenue();
 
-    // 🔥 DAILY REVENUE (YYYY-MM-DD)
+    // 🔥 DAILY REVENUE (DELIVERED ONLY)
     @Query("""
         SELECT FUNCTION('DATE', o.createdAt),
                COALESCE(SUM(o.totalAmount),0)
         FROM Order o
+        WHERE o.status = 'DELIVERED'
         GROUP BY FUNCTION('DATE', o.createdAt)
         ORDER BY FUNCTION('DATE', o.createdAt)
     """)
     List<Object[]> getDailyRevenue();
 
-    // 🔥 WEEKLY REVENUE (YEAR-WEEK format)
+    // 🔥 WEEKLY REVENUE (DELIVERED ONLY)
     @Query("""
         SELECT FUNCTION('YEARWEEK', o.createdAt),
                COALESCE(SUM(o.totalAmount),0)
         FROM Order o
+        WHERE o.status = 'DELIVERED'
         GROUP BY FUNCTION('YEARWEEK', o.createdAt)
         ORDER BY FUNCTION('YEARWEEK', o.createdAt)
     """)

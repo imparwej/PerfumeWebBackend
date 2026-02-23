@@ -10,6 +10,7 @@ import org.springframework.data.domain.*;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,14 +30,14 @@ public class OrderController {
     // =========================
     // Helper: require auth
     // =========================
-    private String requireUser(String email) {
-        if (email == null) {
+    private String requireUser(UserDetails userDetails) {
+        if (userDetails == null) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Unauthorized"
             );
         }
-        return email;
+        return userDetails.getUsername(); // email
     }
 
     // =========================
@@ -44,11 +45,14 @@ public class OrderController {
     // =========================
     @PostMapping
     public OrderResponse placeOrder(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody OrderRequest request
     ) {
-        email = requireUser(email);
+
+        String email = requireUser(userDetails);
+
         Order order = orderService.placeOrder(email, request);
+
         return toDto(order);
     }
 
@@ -58,10 +62,13 @@ public class OrderController {
     @PatchMapping("/{id}/cancel")
     public OrderResponse cancelOrder(
             @PathVariable Long id,
-            @AuthenticationPrincipal String email
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        email = requireUser(email);
+
+        String email = requireUser(userDetails);
+
         Order order = orderService.cancelOrder(id, email);
+
         return toDto(order);
     }
 
@@ -85,10 +92,10 @@ public class OrderController {
     // =========================
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportOrdersPdf(
-            @AuthenticationPrincipal String email
+            @AuthenticationPrincipal UserDetails userDetails
     ) throws Exception {
 
-        email = requireUser(email);
+        String email = requireUser(userDetails);
 
         List<Order> orders =
                 orderService.getOrdersByUser(email, Pageable.unpaged())
@@ -108,11 +115,14 @@ public class OrderController {
     // =========================
     @GetMapping("/{id}")
     public OrderResponse getOrderById(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id
     ) {
-        email = requireUser(email);
+
+        String email = requireUser(userDetails);
+
         Order order = orderService.getOrderByIdSecure(id, email);
+
         return toDto(order);
     }
 
@@ -121,12 +131,12 @@ public class OrderController {
     // =========================
     @GetMapping("/my")
     public PaginatedResponse<OrderResponse> getMyOrders(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
 
-        email = requireUser(email);
+        String email = requireUser(userDetails);
 
         Pageable pageable = PageRequest.of(page, size);
 
