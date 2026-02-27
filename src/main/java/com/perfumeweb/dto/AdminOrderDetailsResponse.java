@@ -11,6 +11,7 @@ public class AdminOrderDetailsResponse {
 
     private Long id;
     private String status;
+    private String paymentStatus;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
     private String paymentMethod;
@@ -34,7 +35,6 @@ public class AdminOrderDetailsResponse {
     private LocalDateTime deliveredAt;
     private LocalDateTime cancelledAt;
 
-    // Final State
     private boolean finalState;
 
     private List<OrderItemResponse> items;
@@ -43,45 +43,41 @@ public class AdminOrderDetailsResponse {
 
         this.id = order.getId();
         this.status = order.getStatus().name();
+        this.paymentStatus = order.getPaymentStatus().name();
         this.totalAmount = order.getTotalAmount();
         this.createdAt = order.getCreatedAt();
         this.paymentMethod = order.getPaymentMethod();
 
-        // Address
         this.shippingAddress = order.getShippingAddress();
         this.city = order.getCity();
         this.pincode = order.getPincode();
 
-        // User
         if (order.getUser() != null) {
             this.userName = order.getUser().getName();
             this.userEmail = order.getUser().getEmail();
         }
 
-        // Tracking
         this.trackingNumber = order.getTrackingNumber();
         this.courierName = order.getCourierName();
 
-        // Timeline
         this.packedAt = order.getPackedAt();
         this.shippedAt = order.getShippedAt();
         this.deliveredAt = order.getDeliveredAt();
         this.cancelledAt = order.getCancelledAt();
 
-        // Final State
         this.finalState = order.isFinalState();
 
-        // Items
         this.items = order.getOrderItems()
                 .stream()
                 .map(OrderItemResponse::new)
                 .collect(Collectors.toList());
     }
 
-    // ================= GETTERS =================
+    // GETTERS
 
     public Long getId() { return id; }
     public String getStatus() { return status; }
+    public String getPaymentStatus() { return paymentStatus; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getPaymentMethod() { return paymentMethod; }

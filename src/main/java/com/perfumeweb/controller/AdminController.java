@@ -11,8 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
@@ -71,27 +69,8 @@ public class AdminController {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // 🔒 FINAL STATE LOCK
-        if (order.isFinalState()) {
-            throw new RuntimeException("Finalized orders cannot be modified");
-        }
-
-        // 🔄 VALID TRANSITIONS
-        OrderStatus current = order.getStatus();
-
-        if (!isValidTransition(current, status)) {
-            throw new RuntimeException("Invalid status transition");
-        }
-
-        // 📌 UPDATE STATUS
-        order.setStatus(status);
-
-        // 🕒 TIMELINE AUTO UPDATE
-        switch (status) {
-            case SHIPPED -> order.markShipped();
-            case DELIVERED -> order.markDelivered();
-            case CANCELLED -> order.markCancelled();
-        }
+        // 🔒 FINAL STATE LOCK handled inside entity
+        order.updateStatus(status);
 
         return orderRepository.save(order);
     }
@@ -100,8 +79,7 @@ public class AdminController {
     @PatchMapping("/orders/{id}/tracking")
     public Order updateTracking(
             @PathVariable Long id,
-            @RequestParam String trackingNumber,
-            @RequestParam String courierName
+            @RequestBody TrackingUpdateRequest request
     ) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
@@ -110,24 +88,23 @@ public class AdminController {
             throw new RuntimeException("Cannot modify finalized order");
         }
 
-        order.setTrackingNumber(trackingNumber);
-        order.setCourierName(courierName);
+        order.setTrackingNumber(request.getTrackingNumber());
+        order.setCourierName(request.getCourierName());
 
         return orderRepository.save(order);
     }
 
-    // ===================== STATUS TRANSITION RULES =====================
-    private boolean isValidTransition(OrderStatus current, OrderStatus next) {
+    // ===================== UPDATE PAYMENT STATUS =====================
+    @PatchMapping("/orders/{id}/payment")
+    public Order updatePaymentStatus(
+            @PathVariable Long id,
+            @RequestParam String paymentStatus
+    ) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (current == OrderStatus.PLACED) {
-            return next == OrderStatus.SHIPPED
-                    || next == OrderStatus.CANCELLED;
-        }
+        order.markPaymentPaid(); // customize if needed
 
-        if (current == OrderStatus.SHIPPED) {
-            return next == OrderStatus.DELIVERED;
-        }
-
-        return false;
+        return orderRepository.save(order);
     }
 }
